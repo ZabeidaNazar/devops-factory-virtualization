@@ -37,15 +37,15 @@ sudo chown -R prometheus:prometheus /var/lib/prometheus
 
 sudo tee /etc/prometheus/prometheus.yml <<'EOF'
 scrape_configs:
-- job_name: 'prometheus'
+  - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
   - job_name: 'web_server'
     static_configs:
-      - targets: ['192.168.50.10:9100']
+      - targets: ['192.168.60.10:9100']
   - job_name: 'db_server'
     static_configs:
-      - targets: ['192.168.50.20:9104']
+      - targets: ['192.168.60.20:9104']
 rule_files: [/etc/prometheus/rules.yml]
 EOF
 
@@ -68,8 +68,8 @@ groups:
     expr: sum without (agent) (rate(bindplane_agent_measurements:15m{}[1h14m59s999ms] offset 10s))
 EOF
 
-sudo touch /usr/lib/systemd/system/prometheus.service
-sudo chmod 0640 /usr/lib/systemd/system/prometheus.service
+sudo touch /etc/systemd/system/prometheus.service
+sudo chmod 0640 /etc/systemd/system/prometheus.service
 
 sudo tee /etc/systemd/system/prometheus.service <<'EOF'
 [Unit]
