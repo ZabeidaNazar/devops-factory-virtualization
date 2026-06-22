@@ -1,0 +1,11 @@
+Vagrant.configure("2") do |config|
+    config.vm.provision "shell", inline: "echo Hello"
+
+    config.vm.define "usrv" do |usrv|
+        usrv.vm.box = "bento/ubuntu-26.04"
+    end
+
+    config.vm.network "forwarded_port",
+    guest: 22,
+    host: 2222
+end
