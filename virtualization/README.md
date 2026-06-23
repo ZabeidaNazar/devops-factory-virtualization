@@ -122,7 +122,6 @@ This VM was created by Vagrant!
 ## Task 3 (✦✦✦)
 1. Modify the Vagrantfile to:
     1. Launch two servers:
-        - Використовував box bento/ubuntu-26.04: https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-26.04
         1. web server (e.g., using the ubuntu/bionic64 box, named web, with a startup command echo "Web server ready").
         2. db server (e.g., using the ubuntu/focal64 box, named db, with a startup command echo "Database server ready").
     2. Both machines should have different forwarded SSH ports (e.g., 2222 for web and 3333 for db).
@@ -161,15 +160,15 @@ This VM was created by Vagrant!
 ## Task 4 (✦✦✦✦)
 1. Extend the Vagrantfile to:
     1. Create three virtual machines:
-        - Використовував box bento/ubuntu-26.04: https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-26.04
         1. web server: Use the ubuntu/bionic64 box and install Nginx automatically during provisioning. Configure it to serve a static HTML page with the content: 
-        ```html
-        <h1>Welcome to the Web Server!</h1>
-        ```
+            ```html
+            <h1>Welcome to the Web Server!</h1>
+            ```
+        - Для вебсервера використано Apache HTTP Server: https://httpd.apache.org/
         2. db server: Use the ubuntu/focal64 box, and install MySQL during provisioning. Set up a sample database test_db with a table users and insert sample data:
-        ```sql
-        INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob’);
-        ```
+            ```sql
+            INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob’);
+            ```
         3. monitoring server: Use the ubuntu/bionic64 box and install Prometheus during provisioning. Configure it to monitor the web and db servers using static targets.
 2. Ensure all machines use private networking to communicate with each other.
     - Додано приватну мережу:
@@ -180,7 +179,6 @@ This VM was created by Vagrant!
     ```
 2. Configure provisioning scripts for each server to automate the tasks:
     - web server: Ensure the web server serves the static page when accessed via HTTP (e.g., on port 8080 forwarded to port 80).
-        - Для вебсервера використано Apache HTTP Server: https://httpd.apache.org/
         - Встановлення і створення index.html: [web_configure.sh](task4/web_configure.sh)
         - Переадресовано порти:
         ```Ruby
@@ -192,8 +190,47 @@ This VM was created by Vagrant!
         ```Ruby
         db.vm.network "forwarded_port", guest: 3306, host: 33060
         ```
+        - Користувач бази даних може заходити з ip адреси web сервера
+            ```shell
+            sudo sed -i "s/^bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+            ```
+            ```sql
+            CREATE USER IF NOT EXISTS '$MYSQL_USERNAME'@'%' IDENTIFIED WITH caching_sha2_password BY '$MYSQL_PASSWORD';
+            ```
+        - Використано змінні оточення для credentials: `MYSQL_USERNAME`, `MYSQL_PASSWORD`
     - monitoring server: Prometheus should scrape metrics from web (HTTP) and db (MySQL) servers.
         - Переадресовано порти:
         ```Ruby
         mon.vm.network "forwarded_port", guest: 9090, host: 9090
         ```
+3. Test the setup:
+    - Verify that the static HTML page is accessible via the browser on localhost:8080.
+        - Перевірив сторінку:
+        ![HTML сторінка](img/web_site.png)
+    - Write a script to query the users table on the db server from the web server and log the output to a file (e.g. /var/log/db_query.log).
+        - Скрипт: [db_query.sh](task4/db_query.sh)
+        - Запуск скрипта:
+        ```shell
+        nazar@hackathon:~/devops/virtualization/task4$ vagrant ssh web
+        Welcome to Ubuntu 18.04.6 LTS (GNU/Linux 4.15.0-212-generic x86_64)
+
+        vagrant@web:~$ ./db_query.sh 
+        mysql: [Warning] Using a password on the command line interface can be insecure.
+        id      name
+        1       Alice
+        2       Bob
+        vagrant@web:~$ cat /var/log/db_query.log 
+        id      name
+        1       Alice
+        2       Bob
+        ```
+        - Доступ через DBeaver:
+        ![Таблиця в DBeaver](img/db_dbeaver.png)
+    - Confirm that the monitoring server's Prometheus dashboard shows metrics from the web and db servers.
+        - Перевірив моніторинговий сервер:
+        ![Моніторинговий сервер](img/prometheus.png)
+4. Document the setup process:
+    - Add comments to your Vagrantfile explaining each step.
+        - [Vagrantfile з коментарями](task4/Vagrantfile)
+    - Create a README.md file describing how to set up the environment, access the web page, query the database, and verify monitoring metrics.
+        - [README.md з описом](task4/README.md)
